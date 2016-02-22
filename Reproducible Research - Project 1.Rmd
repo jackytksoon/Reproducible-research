@@ -1,0 +1,128 @@
+---
+title: "Reproducible Research Project 1"
+output: html_document
+---
+
+
+```{r}
+##The file is already download and in the working directory
+##Thus read the csv and put into a data frame with read.csv
+activity <- read.csv("activity.csv")
+
+##Calculate the total number of steps taken each day using the function 
+##below
+sumeachdate <- aggregate(steps~date,data=activity,FUN = "sum")
+
+##plot a histogram by defining the title and x-axis
+hist(sumeachdate$steps,main = "Total number of steps taken each day",
+     xlab = "Number of Steps", col = "Green")
+
+##Calculate the mean and median of the total number of steps taken
+##per day
+meanstepperday <- mean(sumeachdate$steps)
+medstepperday <- median(sumeachdate$steps)
+
+##print out the mean of the total number of steps taken, will be 10766.19
+meanstepperday
+
+##print out the median of the total number of steps taken, 
+##will be 10765
+medstepperday
+
+##Calculate the average of steps by interval
+meanbyinterval <- aggregate(steps~interval,data=activity,FUN = "mean")
+
+##Plot a time series chart to show the average number of steps taken 
+##per interval
+plot(meanbyinterval$interval,meanbyinterval$steps,type="l",
+     main="Average number of steps taken per Interval",
+     xlab = "Interval", ylab = "Steps")
+
+##Using this function to see which interval have the maximum number of 
+##steps, the print out result showing in the interval 835
+subset(meanbyinterval,meanbyinterval$steps == max(meanbyinterval$steps))
+
+##using summary, the number of NAs is 2304
+summary(activity)
+
+##filter out the data that have missing value
+actywithna <- subset(activity,is.na(activity$steps) == TRUE)
+
+##Using the average number of steps per interval to impute the missing
+##value
+mergeinterval <- merge(actywithna,meanbyinterval,by = "interval")
+
+##Took the column that is needed
+mergeinterval <- mergeinterval[,c(4,3,1)]
+
+##Rename the column names to be same as the initial data table
+colnames(mergeinterval) <- colnames(activity)
+
+##filter out the data that don't have missing value
+actywithnona <- subset(activity,!is.na(activity$steps) == TRUE)
+
+##Combine the data that have the impute data and the data that don't have
+##missing value
+newactivity <- rbind(actywithnona,mergeinterval)
+
+##load the library 'dplyr' to arrange the data by date and interval
+library(dplyr)
+newactivity <- arrange(newactivity,date,interval)
+
+##Calculate the total number of steps taken each day for the new
+##dataset using the function  below
+newsumeachdate <- aggregate(steps~date,data=newactivity,FUN = "sum")
+
+##plot a histogram using new dataset by defining the title and x-axis
+hist(newsumeachdate$steps,main = "Total number of steps taken each day",
+     xlab = "Number of Steps", col = "Green")
+
+##Calculate the new dataset mean and median of the total number of steps
+##taken per day
+newmeanstepperday <- mean(newsumeachdate$steps)
+newmedstepperday <- median(newsumeachdate$steps)
+
+##print out the new dataset mean of the total number of steps taken, 
+##will be 10766.19
+newmeanstepperday
+
+##print out the new dataset median of the total number of steps taken, 
+##will be 10766.19
+newmedstepperday
+
+##change the date column to date format
+newactivity$date <- as.Date(newactivity$date,"%Y-%m-%d")
+
+##adding a new column indicating which weekdays it is
+newactivity <- mutate(newactivity, weekdays = weekdays(newactivity$date))
+
+##create a vector of the weekdays
+vweekdays <- unique(newactivity$weekdays)
+
+##adding a new column indicating weekday or weekend for each day
+newactivity <- mutate(newactivity, wkendorwkday = ifelse(weekdays %in% vweekdays[1:5],
+                                          "weekday","weekend"))
+
+##split the data to two dataset, weekday and weekend
+weekdaydata <- subset(newactivity,newactivity$wkendorwkday == "weekday")
+weekenddata <- subset(newactivity,newactivity$wkendorwkday == "weekend")
+
+##Calculate the average of steps by interval
+wkdaymeanbyinterval <- aggregate(steps~interval,data=weekdaydata,
+                                 FUN = "mean")
+wkendmeanbyinterval <- aggregate(steps~interval,data=weekenddata,
+                                 FUN = "mean")
+
+##Change the parameter 2 panel for the chart plotting
+par(mfrow=c(2,1))
+
+##Plot a time series chart to show the average number of steps taken 
+##per interval by Weekday and weekend
+plot(wkdaymeanbyinterval$interval,wkdaymeanbyinterval$steps,type="l",
+     main="Average number of steps taken per Interval for Weekday",
+     xlab = "Interval", ylab = "Steps")
+
+plot(wkendmeanbyinterval$interval,wkendmeanbyinterval$steps,type="l",
+     main="Average number of steps taken per Interval for Weekend",
+     xlab = "Interval", ylab = "Steps")
+```
